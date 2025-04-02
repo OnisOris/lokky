@@ -16,6 +16,7 @@ def test_pionmath():
         "safety_radius": 1.5,
         "max_acceleration": 0.3,
         "max_speed": 0.5,
+        "unstable_radius": 2
     }
     solver = SSolver(params)
     drone1 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
