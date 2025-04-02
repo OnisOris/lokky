@@ -327,10 +327,38 @@ class SSolver:
         current_error_norm = np.linalg.norm(
             error_matrix[index_current_state_vector][0:3]
         )
-        state_matrix = self.state_filter(
+        state_matrix_filtered = self.state_filter(
             current_state, state_matrix, self.safety_radius * 3
         )
-        for j, other_state in enumerate(state_matrix):
+
+        points_around = find_points_in_radius(
+            current_state[0:3],
+            state_matrix_filtered[:, 0:3],
+            self.unstable_radius,
+        )
+
+        if len(points_around) > 0:
+            mean_vector = np.mean(points_around - current_state[0:3], axis=0)
+            mean_norm = np.linalg.norm(mean_vector)
+            if mean_norm > 1e-6:
+                mean_dir = mean_vector / mean_norm
+                axis = np.cross(mean_dir, np.array([0, 0, 1]))
+                axis_norm = np.linalg.norm(axis)
+                if axis_norm < 1e-6:
+                    axis = np.array(
+                        [1, 0, 0]
+                    )
+                else:
+                    axis = normalization(axis)
+                projections = np.dot(points_around - current_state[0:3], axis)
+                count_positive = np.sum(projections > 0)
+                count_negative = len(projections) - count_positive
+                angle = (
+                    np.pi / 2
+                    if count_positive < count_negative
+                    else -np.pi / 2
+                )
+        for j, other_state in enumerate(state_matrix_filtered):
             if j == index_current_state_vector:
                 continue
             check_in_sphere, dist_to_object, vector_to_object = (
@@ -343,14 +371,16 @@ class SSolver:
                 repulsion_force -= vector_to_object_norm / (
                     (dist_to_object + 1 - self.safety_radius) ** 2
                 )
+
             if self.term_count_unstable_vector(
                 dist_to_object, current_error_norm, current_state[3:6]
             ):
-                unstable_vector += rot_v(
-                    vector_to_object_norm * 0.3,
-                    -np.pi / 2,
-                    axis=np.array([0, 0, 1]),
-                )
+                if len(points_around) > 0 and mean_norm > 1e-6:
+                    rotated_vector = rot_v(
+                        vector_to_object_norm * 0.3, angle, axis
+                    )
+                    unstable_vector += rotated_vector
+
         new_velocity = (
             current_state[3:6]
             + self.repulsion_weight * repulsion_force
@@ -361,9 +391,8 @@ class SSolver:
             new_velocity,
             max_acceleration=self.max_acceleration,
         )
-        new_velocity = saturation(new_velocity, self.max_speed)
+        return saturation(new_velocity, self.max_speed)
 
-        return new_velocity
 
     def state_filter(
         self, current_state, state_matrix: NDArray, filter_radius: float
