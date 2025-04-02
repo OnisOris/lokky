@@ -10,7 +10,8 @@ maintainers = [
     {name = "Michael", email = "onisoris@yandex.ru"}
 ]
 dependencies = [
-    "numpy>=2.0.2"
+    "numpy>=2.0.2",
+    "matplotlib>=3.10.1"
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -55,3 +56,7 @@ extend-select = [
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[project.scripts]
+lokky-analyze = "lokky.scripts.lokky_analyze:main"
+lokky-analyze2d = "lokky.scripts.lokky_analyze2d:main"
