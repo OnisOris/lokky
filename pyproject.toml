@@ -10,7 +10,7 @@ maintainers = [
     {name = "Michael", email = "onisoris@yandex.ru"}
 ]
 dependencies = [
-    "numpy>=2.0.2",
+    "numpy>=2.2.4",
     "matplotlib>=3.10.1"
 ]
 classifiers = [
