@@ -1,13 +1,14 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D, proj3d
+from matplotlib.patches import Circle
 from lokky.pionmath import SSolver  # import the SSolver class from the lokky package
 
 def main():
     # Number of points
     n_points = 10
 
-    # Parameters for SSolver
+    # Parameters for SSolver (safety_radius is used for drawing the safety zones)
     params = {
         "kp": np.ones((n_points, 6)),
         "ki": np.zeros((n_points, 6)),
@@ -23,6 +24,7 @@ def main():
         "max_speed": 1.0,
         "unstable_radius": 2,
     }
+    safety_radius = params["safety_radius"]
     solver = SSolver(params)
 
     # Generate random positions and velocities
@@ -88,22 +90,29 @@ def main():
     ax_3d.view_init(elev=30, azim=-60)
 
     # Create scatter plots for all views
-    state_scatter_top = ax_top.scatter(positions[:, 0], positions[:, 1], color="black", label="State")
-    target_scatter_top = ax_top.scatter(target_positions[:, 0], target_positions[:, 1],
+    state_scatter_top = ax_top.scatter(positions[:, 0], positions[:, 1],
+                                       color="black", label="State")
+    target_scatter_top = ax_top.scatter(target_positions[:, 0],
+                                        target_positions[:, 1],
                                         color="blue", marker="x", label="Target")
 
-    state_scatter_side = ax_side.scatter(positions[:, 0], positions[:, 2], color="black", label="State")
-    target_scatter_side = ax_side.scatter(target_positions[:, 0], target_positions[:, 2],
+    state_scatter_side = ax_side.scatter(positions[:, 0], positions[:, 2],
+                                         color="black", label="State")
+    target_scatter_side = ax_side.scatter(target_positions[:, 0],
+                                          target_positions[:, 2],
                                           color="blue", marker="x", label="Target")
 
-    state_scatter_front = ax_front.scatter(positions[:, 1], positions[:, 2], color="black", label="State")
-    target_scatter_front = ax_front.scatter(target_positions[:, 1], target_positions[:, 2],
-                                            color="blue", marker="x", label="Target")
+    state_scatter_front = ax_front.scatter(positions[:, 1], positions[:, 2],
+                                           color="black", label="State")
+    target_scatter_front = ax_front.scatter(target_positions[:, 1],
+                                             target_positions[:, 2],
+                                             color="blue", marker="x", label="Target")
 
     state_scatter_3d = ax_3d.scatter(positions[:, 0], positions[:, 1], positions[:, 2],
                                      color="black", label="State")
     target_scatter_3d = ax_3d.scatter(target_positions[:, 0], target_positions[:, 1],
-                                      target_positions[:, 2], color="blue", marker="x", label="Target")
+                                      target_positions[:, 2],
+                                      color="blue", marker="x", label="Target")
 
     # Lists for arrows in 2D views
     error_arrows_top, ctrl_arrows_top = [], []
@@ -113,12 +122,83 @@ def main():
     # Lists for quiver arrows in the 3D view
     error_quivers_3d, ctrl_quivers_3d = [], []
 
+    # Lists for safety zones (patches for 2D and surfaces for 3D)
+    safety_circles_top, safety_circles_side, safety_circles_front = [], [], []
+    safety_spheres_3d = []
+
     # Local variables for the selected point and active view
     selected_index = None
     selected_view = None  # can be "top", "side", "front", or "3d"
     last_y = None       # for vertical offsets in 3D
 
-    # Functions to draw arrows and update scatter plots
+    # Function to update safety zones (draws a semi-transparent circle/sphere around each point)
+    def update_safety_zones():
+        nonlocal safety_circles_top, safety_circles_side, safety_circles_front, safety_spheres_3d
+        # Remove existing safety zones (2D circles)
+        for patch in safety_circles_top:
+            patch.remove()
+        for patch in safety_circles_side:
+            patch.remove()
+        for patch in safety_circles_front:
+            patch.remove()
+        safety_circles_top.clear()
+        safety_circles_side.clear()
+        safety_circles_front.clear()
+        # Remove existing safety zones (3D spheres)
+        for surf in safety_spheres_3d:
+            surf.remove()
+        safety_spheres_3d.clear()
+        # For each point, create circles in the 2D views and a sphere in the 3D view
+        for i in range(n_points):
+            # For selected points, use a highlighted color and thicker edge
+            if selected_index == i:
+                face_color = "red"
+                edge_color = "darkred"
+                lw = 2
+            else:
+                face_color = "green"
+                edge_color = "none"
+                lw = 1
+            # Top view (XY)
+            circle_top = Circle((positions[i, 0], positions[i, 1]),
+                                safety_radius,
+                                facecolor=face_color,
+                                edgecolor=edge_color,
+                                alpha=0.3,
+                                lw=lw)
+            ax_top.add_patch(circle_top)
+            safety_circles_top.append(circle_top)
+            # Side view (XZ)
+            circle_side = Circle((positions[i, 0], positions[i, 2]),
+                                 safety_radius,
+                                 facecolor=face_color,
+                                 edgecolor=edge_color,
+                                 alpha=0.3,
+                                 lw=lw)
+            ax_side.add_patch(circle_side)
+            safety_circles_side.append(circle_side)
+            # Front view (YZ)
+            circle_front = Circle((positions[i, 1], positions[i, 2]),
+                                  safety_radius,
+                                  facecolor=face_color,
+                                  edgecolor=edge_color,
+                                  alpha=0.3,
+                                  lw=lw)
+            ax_front.add_patch(circle_front)
+            safety_circles_front.append(circle_front)
+            # 3D view: draw a sphere
+            u = np.linspace(0, 2 * np.pi, 20)
+            v = np.linspace(0, np.pi, 10)
+            x = positions[i, 0] + safety_radius * np.outer(np.cos(u), np.sin(v))
+            y = positions[i, 1] + safety_radius * np.outer(np.sin(u), np.sin(v))
+            z = positions[i, 2] + safety_radius * np.outer(np.ones_like(u), np.cos(v))
+            # For selected points, use a different color
+            color_3d = "red" if selected_index == i else "green"
+            sphere = ax_3d.plot_surface(x, y, z, color=color_3d, alpha=0.2, shade=False)
+            safety_spheres_3d.append(sphere)
+        fig.canvas.draw_idle()
+
+    # Functions to draw arrows and update scatter plots (as before)
     def draw_arrows_2d():
         nonlocal error_arrows_top, ctrl_arrows_top, error_arrows_side, ctrl_arrows_side, error_arrows_front, ctrl_arrows_front
         # Remove old arrows
@@ -250,6 +330,7 @@ def main():
             selected_index = int(np.argmin(distances))
             selected_view = current_view
             last_y = event.y
+            update_safety_zones()
 
     def on_motion(event):
         nonlocal selected_index, positions, state_matrix, control_signals, last_y
@@ -288,11 +369,13 @@ def main():
         draw_arrows_2d()
         draw_arrows_3d()
         last_y = event.y
+        update_safety_zones()
 
     def on_release(event):
         nonlocal selected_index, selected_view
         selected_index = None
         selected_view = None
+        update_safety_zones()
 
     # Connect event handlers to the axes
     for ax in [ax_top, ax_side, ax_front, ax_3d]:
@@ -300,6 +383,7 @@ def main():
         ax.figure.canvas.mpl_connect("motion_notify_event", on_motion)
         ax.figure.canvas.mpl_connect("button_release_event", on_release)
 
+    update_safety_zones()
     plt.tight_layout()
     plt.show()
 
