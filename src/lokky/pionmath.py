@@ -1,9 +1,10 @@
 import numpy as np
 from numpy.typing import NDArray
 from numpy import cos, sin
+from typing import Optional
 
 
-def saturation(vector: np.ndarray, max_value: float) -> np.ndarray:
+def saturation(vector: NDArray, max_value: float) -> NDArray:
     """
     Limit the vector magnitude to a maximum value.
 
@@ -18,21 +19,23 @@ def saturation(vector: np.ndarray, max_value: float) -> np.ndarray:
 
 
 def limit_acceleration(
-    current_velocity: np.ndarray,
-    target_velocity: np.ndarray,
+    current_velocity: NDArray,
+    target_velocity: NDArray,
     max_acceleration: float,
-) -> np.ndarray:
+    dt: float,
+) -> NDArray:
     """
     Limit the change in velocity (acceleration) to a maximum value.
 
     :param current_velocity: Current velocity vector.
     :param target_velocity: Desired target velocity vector.
     :param max_acceleration: Maximum allowed acceleration.
+    :param dt: Time step
     :return: Updated velocity vector limited by max_acceleration.
     """
     change = target_velocity - current_velocity
     norm = np.linalg.norm(change)
-    if norm > max_acceleration:
+    if norm > max_acceleration * dt:
         change = change / norm * max_acceleration
     return current_velocity + change
 
@@ -54,7 +57,7 @@ def find_points_in_radius(
     return points[mask]
 
 
-def rot_v(vector: np.ndarray, angle: float, axis: np.ndarray) -> np.ndarray:
+def rot_v(vector: NDArray, angle: float, axis: NDArray) -> NDArray:
     """
     Rotate a vector (or set of vectors) around an arbitrary axis.
 
@@ -97,7 +100,7 @@ def check_point_in_radius(
     return dist <= radius, dist, vector
 
 
-def normalization(vector: np.ndarray, length: float = 1.0) -> np.ndarray:
+def normalization(vector: NDArray, length: float = 1.0) -> NDArray:
     """
     Normalize the vector to a specified length.
 
@@ -124,13 +127,16 @@ class SSolver:
     When running on a drone, x[0] corresponds to the drone's state vector.
     """
 
-    def __init__(self, params: dict):
+    def __init__(
+        self, params: Optional[dict] = None, count_of_objects: int = 5
+    ):
         """
         Initialize the parameters.
 
         :param params: Dictionary of parameters.
-        :type params: dict
+        :param count_of_objects: count of objects for solving
         """
+        self.count_of_objects = count_of_objects
         self.kd = None
         self.ki = None
         self.kp = None
@@ -147,9 +153,9 @@ class SSolver:
         self.params = params
         if self.params is None:
             self.params = {
-                "kp": 1,
-                "ki": 0,
-                "kd": 1,
+                "kp": np.ones((self.count_of_objects, 6)),
+                "ki": np.zeros((self.count_of_objects, 6)),
+                "kd": np.ones((self.count_of_objects, 6)),
                 "attraction_weight": 1.0,
                 "cohesion_weight": 1.0,
                 "alignment_weight": 1.0,
@@ -161,7 +167,7 @@ class SSolver:
                 "max_speed": 0.4,
                 "unstable_radius": 1.5,  # Example value, can be adjusted
             }
-        self.read_params(params)
+        self.read_params(self.params)
         # Variables for storing previous error and integral term for PID control
         self.previous_error = None
         self.integral = np.zeros_like(self.kp, dtype=np.float64)
@@ -213,7 +219,7 @@ class SSolver:
         self.previous_error = error
 
         # Compute additional velocity direction based on swarm behavior
-        vda = self.compute_velocity_direction_all(state_matrix, error)
+        vda = self.compute_velocity_direction_all(state_matrix, error, dt=dt)
         # Final control signal (limited to a maximum magnitude)
         control_signal = saturation(
             p_term[:, :3] + i_term[:, :3] + d_term[:, :3], 1
@@ -222,13 +228,14 @@ class SSolver:
         return control_signal
 
     def compute_velocity_direction_all(
-        self, state_matrix: NDArray, error_matrix: NDArray
+        self, state_matrix: NDArray, error_matrix: NDArray, dt: float
     ) -> NDArray:
         """
         Compute the corrective velocity vectors for all objects.
 
         :param state_matrix: Current state matrix (n x 6).
         :param error_matrix: Error matrix (n x 6).
+        :param dt: Time step
         :return: Corrective velocity matrix (n x 3).
         """
         n = state_matrix.shape[0]
@@ -236,7 +243,7 @@ class SSolver:
         for index in range(n):
             control_velocity_matrix[index, :] = (
                 self.compute_velocity_direction(
-                    index, state_matrix, error_matrix
+                    index, state_matrix, error_matrix, dt=dt
                 )
             )
         return control_velocity_matrix
@@ -246,6 +253,7 @@ class SSolver:
         index_current_state_vector: int,
         state_matrix: NDArray,
         error_matrix: NDArray,
+        dt: float,
     ) -> NDArray:
         """
         Compute the corrective velocity vector for a single object considering repulsion and unstable corrections.
@@ -253,6 +261,7 @@ class SSolver:
         :param index_current_state_vector: Index of the current state vector.
         :param state_matrix: Current state matrix (n x 6).
         :param error_matrix: Error matrix (n x 6).
+        :param dt: Time step
         :return: New velocity vector (3,).
         """
         current_state = state_matrix[index_current_state_vector]
@@ -334,7 +343,7 @@ class SSolver:
             + self.unstable_weight * unstable_vector
         )
         new_velocity = limit_acceleration(
-            current_state[3:6], new_velocity, self.max_acceleration
+            current_state[3:6], new_velocity, self.max_acceleration, dt=dt
         )
         return saturation(new_velocity, self.max_speed)
 
