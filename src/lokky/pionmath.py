@@ -194,14 +194,18 @@ class SSolver:
         self.kd = np.array(params["kd"])
 
     def solve_for_one(
-        self, state_matrix: NDArray, target_position: NDArray, dt: float
-    ) -> None:
+        self,
+        state_matrix: NDArray,
+        target_position: NDArray,
+        dt: float
+    ) -> NDArray:
         """
         Compute the control for one object
 
         :param state_matrix: State of plants, state_matrix[0] - self position
-        :param target_position: Targer point for plant
-        :return: None
+        :param target_position: Target point for plant
+        :param dt: Time step
+        :return: NDArray
         """
         error = np.array([target_position - state_matrix[0]])
         # Compute PID terms
