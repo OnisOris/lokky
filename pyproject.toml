@@ -10,7 +10,7 @@ maintainers = [
     {name = "Michael", email = "onisoris@yandex.ru"}
 ]
 dependencies = [
-    "numpy>=2.2.4"
+    "numpy>=1.22.0",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
