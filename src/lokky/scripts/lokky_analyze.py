@@ -14,7 +14,17 @@ from lokky.pionmath import (
 import argparse
 
 
-def main(n_points):
+def main():
+    parser = argparse.ArgumentParser(
+        description="Введите количество симулируемых точек"
+    )
+    parser.add_argument(
+        "--n",
+        default=4,
+        help="Количество точек",
+    )
+    args = parser.parse_args()
+    n_points = int(args.n)
     # Parameters for SSolver (safety_radius is used for drawing the safety zones)
     params = {
         "kp": np.ones((n_points, 6)),
@@ -527,13 +537,4 @@ def main(n_points):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Введите количество симулируемых точек"
-    )
-    parser.add_argument(
-        "--n",
-        default=4,
-        help="Количество точек",
-    )
-    args = parser.parse_args()
-    main(int(args.n))
+    main()
