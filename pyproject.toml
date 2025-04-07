@@ -10,8 +10,7 @@ maintainers = [
     {name = "Michael", email = "onisoris@yandex.ru"}
 ]
 dependencies = [
-    "numpy>=2.2.4",
-    "matplotlib>=3.10.1"
+    "numpy>=2.2.4"
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -31,6 +30,11 @@ Homepage = "https://github.com/OnisOris/lokky"
 Documentation = "https://onisoris.github.io/lokky"
 Repository = "https://github.com/OnisOris/lokky.git"
 Issues = "https://github.com/OnisOris/lokky/issues"
+
+[project.optional-dependencies]
+plotting = [
+    "matplotlib>=3.10.1"
+]
 
 [dependency-groups]
 dev = [

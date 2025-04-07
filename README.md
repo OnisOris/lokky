@@ -3,6 +3,8 @@ Swarm algorithms module
 
 # Installation
 
+## Base install
+
 ```
 pip install git+https://github.com/OnisOris/lokky
 ```
@@ -11,7 +13,13 @@ pip install git+https://github.com/OnisOris/lokky
 pip install lokky
 ```
 
-# Example
+## Install with visualisation
+
+```
+pip install "lokky[plotting]"
+```
+
+# Examples
 
 ```python
 import numpy as np
@@ -38,3 +46,13 @@ target_matrix = np.array([4.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 state_matrix = np.array([drone1, drone2])
 new_velocities = solver.solve(state_matrix, target_matrix, 0.1)
 ```
+
+# Testing script
+
+After installation (*lokky[plotting]*) run scripts:
+
+```
+lokky-analyze --n 10
+```
+
+ ![lokky-analyze plot](img/img.png)
