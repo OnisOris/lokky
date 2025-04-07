@@ -165,7 +165,7 @@ class SSolver:
                 "safety_radius": 1.0,
                 "max_acceleration": 1,
                 "max_speed": 0.4,
-                "unstable_radius": 1.5,  # Example value, can be adjusted
+                "unstable_radius": 1.5,
             }
         self.read_params(self.params)
         # Variables for storing previous error and integral term for PID control
@@ -193,7 +193,45 @@ class SSolver:
         self.ki = np.array(params["ki"])
         self.kd = np.array(params["kd"])
 
-    def solve(
+    def solve_for_one(
+        self, state_matrix: NDArray, target_position: NDArray, dt: float
+    ) -> None:
+        """
+        Compute the control for one object
+
+        :param state_matrix: State of plants, state_matrix[0] - self position
+        :param target_position: Targer point for plant
+        :return: None
+        """
+        error = np.array([target_position - state_matrix[0]])
+        # Compute PID terms
+        p_term = self.kp * error
+        self.integral += error * dt
+        i_term = self.ki * self.integral
+        if dt == 0.0:
+            derivative = 0
+        elif self.previous_error is not None:
+            derivative = (error - self.previous_error) / dt
+        else:
+            derivative = np.zeros_like(error)
+        d_term = self.kd * derivative
+        self.previous_error = error
+
+        # Compute additional velocity direction based on swarm behavior
+        vda = self.compute_velocity_direction(
+            index_current_state_vector=0,
+            state_matrix=state_matrix,
+            error_matrix=error,
+            dt=dt,
+        )
+        # Final control signal (limited to a maximum magnitude)
+        control_signal = saturation(
+            p_term[:, :3] + i_term[:, :3] + d_term[:, :3], 1
+        )
+        control_signal += vda
+        return control_signal
+
+    def solve_for_all(
         self, state_matrix: NDArray, target_matrix: NDArray, dt: float
     ) -> NDArray:
         """
@@ -219,7 +257,9 @@ class SSolver:
         self.previous_error = error
 
         # Compute additional velocity direction based on swarm behavior
-        vda = self.compute_velocity_direction_all(state_matrix, error, dt=dt)
+        vda = self.compute_velocity_direction_all(
+            state_matrix=state_matrix, error_matrix=error, dt=dt
+        )
         # Final control signal (limited to a maximum magnitude)
         control_signal = saturation(
             p_term[:, :3] + i_term[:, :3] + d_term[:, :3], 1

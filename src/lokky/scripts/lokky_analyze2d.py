@@ -46,7 +46,7 @@ def main():
     dt = 0.1
 
     # Calculate the initial control signals
-    control_signals = solver.solve(state_matrix, target_matrix, dt)
+    control_signals = solver.solve_for_all(state_matrix, target_matrix, dt)
 
     # Create the figure and axis
     fig, ax = plt.subplots(figsize=(8, 8))
@@ -143,7 +143,7 @@ def main():
         state_matrix[selected_index, :2] = event.xdata, event.ydata
 
         # Recalculate control signals
-        control_signals = solver.solve(state_matrix, target_matrix, dt)
+        control_signals = solver.solve_for_all(state_matrix, target_matrix, dt)
 
         # Update the state scatter plot
         state_scatter.set_offsets(positions[:, :2])

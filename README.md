@@ -44,7 +44,7 @@ drone1 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 drone2 = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 target_matrix = np.array([4.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 state_matrix = np.array([drone1, drone2])
-new_velocities = solver.solve(state_matrix, target_matrix, 0.1)
+new_velocities = solver.solve_for_all(state_matrix, target_matrix, 0.1)
 ```
 
 # Testing script

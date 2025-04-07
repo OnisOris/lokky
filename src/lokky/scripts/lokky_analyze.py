@@ -60,7 +60,7 @@ def main():
     dt = 0.1
 
     # Compute control signals
-    control_signals = solver.solve(state_matrix, target_matrix, dt)
+    control_signals = solver.solve_for_all(state_matrix, target_matrix, dt)
 
     # Create a figure with 4 subplots: Top, Side, Front, and 3D view
     fig = plt.figure(figsize=(12, 10))
@@ -512,7 +512,7 @@ def main():
                 positions[selected_index, 0] = new_x
                 positions[selected_index, 1] = new_y
                 state_matrix[selected_index, :2] = [new_x, new_y]
-        control_signals[:] = solver.solve(state_matrix, target_matrix, dt)
+        control_signals[:] = solver.solve_for_all(state_matrix, target_matrix, dt)
         update_scatter()
         draw_arrows_2d()
         draw_arrows_3d()
