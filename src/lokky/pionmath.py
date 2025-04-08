@@ -194,10 +194,7 @@ class SSolver:
         self.kd = np.array(params["kd"])
 
     def solve_for_one(
-        self,
-        state_matrix: NDArray,
-        target_position: NDArray,
-        dt: float
+        self, state_matrix: NDArray, target_position: NDArray, dt: float
     ) -> NDArray:
         """
         Compute the control for one object

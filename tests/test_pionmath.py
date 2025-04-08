@@ -29,9 +29,9 @@ def test_pionmath():
 
 def test_pionmath_for_one():
     params = {
-        "kp": np.eye(1, 6),
+        "kp": np.ones((1, 6)),
         "ki": np.zeros((1, 6)),
-        "kd": np.eye(1, 6) * 0.1,
+        "kd": np.ones((1, 6)) * 0.1,
         "attraction_weight": 0.1,
         "cohesion_weight": 0.1,
         "alignment_weight": 0.1,
@@ -51,8 +51,9 @@ def test_pionmath_for_one():
             [2, 3, 1, 0, 0, 0],
         ]
     )
-    target_matrix = np.array([4.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    target_matrix = np.array([-1, 0.0, 0.0, 0.0, 0.0, 0.0])
     new_velocities = solver.solve_for_one(state_matrix, target_matrix, 0.1)
+    print(new_velocities)
     assert new_velocities.shape == (1, 3)
 
 
