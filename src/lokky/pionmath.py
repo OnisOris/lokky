@@ -127,50 +127,38 @@ class SSolver:
     When running on a drone, x[0] corresponds to the drone's state vector.
     """
 
-    def __init__(
-        self, params: Optional[dict] = None, count_of_objects: int = 5
-    ):
+    def __init__(self, params: dict, count_of_objects: int = 5):
         """
         Initialize the parameters.
 
         :param params: Dictionary of parameters.
         :param count_of_objects: count of objects for solving
         """
-        self.count_of_objects = count_of_objects
-        self.kd = None
-        self.ki = None
-        self.kp = None
-        self.max_acceleration = None
-        self.max_speed = None
-        self.safety_radius = None
-        self.noise_weight = None
-        self.unstable_weight = None
-        self.repulsion_weight = None
-        self.alignment_weight = None
-        self.attraction_weight = None
-        self.cohesion_weight = None
-        self.unstable_radius = None
-        self.params = params
-        if self.params is None:
-            self.params = {
-                "kp": np.ones((self.count_of_objects, 6)),
-                "ki": np.zeros((self.count_of_objects, 6)),
-                "kd": np.ones((self.count_of_objects, 6)),
-                "attraction_weight": 1.0,
-                "cohesion_weight": 1.0,
-                "alignment_weight": 1.0,
-                "repulsion_weight": 4.0,
-                "unstable_weight": 1.0,
-                "noise_weight": 1.0,
-                "safety_radius": 1.0,
-                "max_acceleration": 1,
-                "max_speed": 0.4,
-                "unstable_radius": 1.5,
-            }
-        self.read_params(self.params)
+        self.params = None
+        self.count_of_objects: int = count_of_objects
+        self.kd: NDArray = np.ones((self.count_of_objects, 6))
+        self.ki: NDArray = np.zeros((self.count_of_objects, 6))
+        self.kp: NDArray = np.ones((self.count_of_objects, 6))
+        self.current_velocity_weight: float = 0.0
+        self.max_acceleration: float = 1.0
+        self.max_speed: float = 0.4
+        self.safety_radius: float = 1.0
+        self.noise_weight: float = 0.0
+        self.unstable_weight: float = 1.0
+        self.repulsion_weight: float = 4.0
+        self.alignment_weight: float = 1.0
+        self.attraction_weight: float = 1.0
+        self.cohesion_weight: float = 1.0
+        self.unstable_radius: float = 1.0
+        self.current_velocity_weght: float = 1.0
+        self.border_x: NDArray = np.array([-5, 5])
+        self.border_y: NDArray = np.array([-5, 5])
+        self.border_z: NDArray = np.array([0, 4])
+        if params is not None:
+            self.read_params(params)
         # Variables for storing previous error and integral term for PID control
-        self.previous_error = None
-        self.integral = np.zeros_like(self.kp, dtype=np.float64)
+        self.previous_error: NDArray = np.zeros((self.count_of_objects, 6))
+        self.integral: NDArray = np.zeros_like(self.kp, dtype=np.float64)
 
     def read_params(self, params: dict) -> None:
         """
@@ -182,6 +170,7 @@ class SSolver:
         self.attraction_weight: float = params["attraction_weight"]
         self.cohesion_weight: float = params["cohesion_weight"]
         self.alignment_weight: float = params["alignment_weight"]
+        self.current_velocity_weight = params["current_velocity_weight"]
         self.repulsion_weight: float = params["repulsion_weight"]
         self.unstable_weight: float = params["unstable_weight"]
         self.noise_weight: float = params["noise_weight"]
@@ -210,11 +199,9 @@ class SSolver:
         self.integral += error * dt
         i_term = self.ki * self.integral
         if dt == 0.0:
-            derivative = 0
-        elif self.previous_error is not None:
-            derivative = (error - self.previous_error) / dt
-        else:
             derivative = np.zeros_like(error)
+        else:
+            derivative = (error - self.previous_error) / dt
         d_term = self.kd * derivative
         self.previous_error = error
 
@@ -367,10 +354,10 @@ class SSolver:
         # Global conditions: the object's speed is near zero and error exceeds safety_radius + 0.2
         if (
             np.allclose(np.linalg.norm(current_state[3:6]), 0, atol=0.1)
-            and current_error_norm > self.safety_radius + 0.2
+            and current_error_norm > self.safety_radius
         ):
             # For neighbors within safety_radius + 0.1, apply a rotation
-            mask_unstable = distances < (self.safety_radius + 0.1)
+            mask_unstable = distances < self.safety_radius
             if np.any(mask_unstable):
                 unstable_components = diff_normalized[mask_unstable] * 0.3
                 # Apply rotation to each vector
@@ -379,7 +366,7 @@ class SSolver:
 
         # Compute the new velocity vector
         new_velocity = (
-            current_state[3:6]
+            current_state[3:6] * self.current_velocity_weight
             + self.repulsion_weight * repulsion_force
             + self.unstable_weight * unstable_vector
         )
@@ -408,10 +395,11 @@ class SSolver:
         return state_matrix[mask]
 
     def term_count_unstable_vector(
-        self, dist_to_other_drone: float, error: float, speed: NDArray
+        self, dist_to_other_drone: float, error_norm: float, speed: NDArray
     ) -> bool:
         """
         Determine whether to add an unstable component.
+
         (Kept for backward compatibility; conditions are now applied in a vectorized manner in compute_velocity_direction)
 
         :param dist_to_other_drone: Distance to the other drone.
@@ -420,7 +408,7 @@ class SSolver:
         :return: Boolean indicating if unstable vector should be added.
         """
         return (
-            dist_to_other_drone < self.safety_radius + 0.1
+            dist_to_other_drone < self.safety_radius
             and np.allclose(np.linalg.norm(speed), 0, atol=0.1)
-            and error > self.safety_radius + 0.2
+            and error_norm > self.safety_radius
         )
