@@ -1,17 +1,19 @@
 import argparse
+
 import numpy as np
 
 try:
     import matplotlib.pyplot as plt
     from matplotlib.gridspec import GridSpec
-    from matplotlib.patches import Rectangle, Circle
+    from matplotlib.patches import Circle, Rectangle
 except ImportError:
     plt = None
     print(
         "Warning: matplotlib is not installed. Plotting functions will be disabled."
     )
 
-from mpl_toolkits.mplot3d import Axes3D, proj3d
+from mpl_toolkits.mplot3d import proj3d
+
 from lokky.pionmath import SSolver
 
 

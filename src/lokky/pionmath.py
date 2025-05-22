@@ -1,7 +1,11 @@
+import builtins
+from typing import Annotated, Any
+
 import numpy as np
-from numpy.typing import NDArray
 from numpy import cos, sin
-from typing import Optional
+from numpy.typing import NDArray
+
+Array3 = Annotated[NDArray[Any], (3,)]
 
 
 def saturation(vector: NDArray, max_value: float) -> NDArray:
@@ -85,8 +89,8 @@ def rot_v(vector: NDArray, angle: float, axis: NDArray) -> NDArray:
 
 
 def check_point_in_radius(
-    center_sphere: NDArray, point: NDArray, radius: float = 1.0
-) -> tuple[bool, float, NDArray]:
+    center_sphere: Array3, point: Array3, radius: float = 1.0
+) -> tuple[np.bool[builtins.bool], float, Array3]:
     """
     Check if a point is within a sphere and calculate the distance and vector from the center.
 
@@ -97,7 +101,7 @@ def check_point_in_radius(
     """
     vector = point - center_sphere
     dist = np.linalg.norm(vector)
-    return dist <= radius, dist, vector
+    return dist <= radius, float(dist), vector
 
 
 def normalization(vector: NDArray, length: float = 1.0) -> NDArray:

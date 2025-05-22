@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from lokky.pionmath import SSolver  # import the solver class from the lokky module
+
+from lokky.pionmath import (
+    SSolver,  # import the solver class from the lokky module
+)
 
 
 def main():
