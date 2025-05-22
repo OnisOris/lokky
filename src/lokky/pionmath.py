@@ -90,7 +90,7 @@ def rot_v(vector: NDArray, angle: float, axis: NDArray) -> NDArray:
 
 def check_point_in_radius(
     center_sphere: Array3, point: Array3, radius: float = 1.0
-) -> tuple[np.bool[builtins.bool], float, Array3]:
+) -> tuple[np.bool, float, Array3]:
     """
     Check if a point is within a sphere and calculate the distance and vector from the center.
 
