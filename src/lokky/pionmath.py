@@ -161,7 +161,7 @@ class SSolver:
         self.cohesion_weight: float = 1.0
         self.unstable_radius: float = 1.0
         self.current_velocity_weght: float = 1.0
-        self.check_borders = True
+        self.check_borders = False
         self.border: BArray = BArray(border_array)
         if params is not None:
             self.read_params(params)
