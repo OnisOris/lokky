@@ -1,9 +1,10 @@
-import builtins
 from typing import Annotated, Any
 
 import numpy as np
 from numpy import cos, sin
 from numpy.typing import NDArray
+
+from lokky.barray import BArray
 
 Array3 = Annotated[NDArray[Any], (3,)]
 
@@ -131,7 +132,12 @@ class SSolver:
     When running on a drone, x[0] corresponds to the drone's state vector.
     """
 
-    def __init__(self, params: dict, count_of_objects: int = 5):
+    def __init__(
+        self,
+        params: dict,
+        count_of_objects: int = 5,
+        border_array: NDArray = np.array([[-4, 4], [-4, 4], [0.5, 3]]),
+    ):
         """
         Initialize the parameters.
 
@@ -155,9 +161,8 @@ class SSolver:
         self.cohesion_weight: float = 1.0
         self.unstable_radius: float = 1.0
         self.current_velocity_weght: float = 1.0
-        self.border_x: NDArray = np.array([-5, 5])
-        self.border_y: NDArray = np.array([-5, 5])
-        self.border_z: NDArray = np.array([0, 4])
+        self.check_borders = True
+        self.border: BArray = BArray(border_array)
         if params is not None:
             self.read_params(params)
         # Variables for storing previous error and integral term for PID control
@@ -221,6 +226,24 @@ class SSolver:
             p_term[:, :3] + i_term[:, :3] + d_term[:, :3], 1
         )
         control_signal += vda
+        if self.check_borders:
+            point = state_matrix[0, 0:3]
+            border_warning = self.border.contains(point)
+
+            if border_warning.any():
+                center_vector = self.border.center - point
+                norm = np.linalg.norm(center_vector)
+
+                if norm > 1e-6:
+                    correction_vector = center_vector / norm * self.max_speed
+                else:
+                    correction_vector = np.zeros(3)
+
+                # Заменяем только нарушенные компоненты
+                return np.where(
+                    border_warning, correction_vector, control_signal[0]
+                ).reshape(1, 3)
+
         return control_signal
 
     def solve_for_all(
@@ -234,6 +257,7 @@ class SSolver:
         :param dt: Time step.
         :return: Control velocity matrix (n x 3).
         """
+
         error = target_matrix - state_matrix
         # Compute PID terms
         p_term = self.kp * error
@@ -257,6 +281,23 @@ class SSolver:
             p_term[:, :3] + i_term[:, :3] + d_term[:, :3], 1
         )
         control_signal += vda
+        if self.check_borders:
+            points = state_matrix[:, :3]
+
+            border_warnings = np.array(
+                [self.border.contains(point) for point in points]
+            )
+
+            center_vectors = self.border.center - points
+
+            norms = np.linalg.norm(center_vectors, axis=1, keepdims=True)
+            norms_safe = np.where(norms < 1e-6, 1.0, norms)
+
+            correction_vectors = center_vectors / norms_safe * self.max_speed
+
+            control_signal = np.where(
+                border_warnings, correction_vectors, control_signal
+            )
         return control_signal
 
     def compute_velocity_direction_all(
