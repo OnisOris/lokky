@@ -26,20 +26,22 @@ pip install "lokky[plotting]"
 ```python
 import numpy as np
 from lokky.pionmath import SSolver
-
+n_points = 1
 params = {
-    "kp": np.eye(2, 6),
-    "ki": np.zeros((2, 6)),
-    "kd": np.eye(2, 6) * 0.1,
-    "attraction_weight": 0.1,
-    "cohesion_weight": 0.1,
-    "alignment_weight": 0.1,
-    "repulsion_weight": 5.0,
-    "unstable_weight": 0.5,
-    "noise_weight": 0.1,
-    "safety_radius": 1.5,
-    "max_acceleration": 0.3,
-    "max_speed": 0.5,
+    "kp": np.ones((n_points, 6)),
+    "ki": np.zeros((n_points, 6)),
+    "kd": np.ones((n_points, 6)) * 0,
+    "attraction_weight": 1.0,
+    "cohesion_weight": 1.0,
+    "alignment_weight": 1.0,
+    "repulsion_weight": 1.0,
+    "unstable_weight": 1.0,
+    "noise_weight": 1.0,
+    "current_velocity_weight": 0.0,
+    "safety_radius": 1.0,
+    "max_acceleration": 1.0,
+    "max_speed": 1.0,
+    "unstable_radius": 2,
 }
 solver = SSolver(params)
 drone1 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
