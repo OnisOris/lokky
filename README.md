@@ -1,3 +1,5 @@
+![lokky-analyze plot](https://github.com/OnisOris/lokky/blob/main/img/img.gif?raw=true)
+
 # lokky
 Swarm algorithms module
 
@@ -54,5 +56,3 @@ After installation (*lokky[plotting]*) run scripts:
 ```
 lokky-analyze --n 10
 ```
-
- ![lokky-analyze plot](https://github.com/OnisOris/lokky/blob/main/img/img.gif?raw=true)
