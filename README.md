@@ -55,4 +55,4 @@ After installation (*lokky[plotting]*) run scripts:
 lokky-analyze --n 10
 ```
 
- ![lokky-analyze plot](https://github.com/OnisOris/lokky/blob/main/img/img.png?raw=true)
+ ![lokky-analyze plot](https://github.com/OnisOris/lokky/blob/main/img/img.gif?raw=true)
