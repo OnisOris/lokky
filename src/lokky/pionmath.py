@@ -382,9 +382,9 @@ class SSolver:
         mask = distances > 1e-6
         diff = diff[mask]
         distances = distances[mask]
-        # If no neighbors, return current velocity
+        # If no neighbors, return zero vector
         if diff.shape[0] == 0:
-            return current_state[3:6]
+            return np.zeros(3)
 
         # Normalize differences while avoiding division by zero
         diff_normalized = diff / np.maximum(distances[:, None], 1e-6)
