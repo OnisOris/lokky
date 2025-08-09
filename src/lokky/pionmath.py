@@ -161,6 +161,7 @@ class SSolver:
         self.cohesion_weight: float = 1.0
         self.unstable_radius: float = 1.0
         self.current_velocity_weght: float = 1.0
+        self.attenuation_mode = False
         self.check_borders = False
         self.border: BArray = BArray(border_array)
         if params is not None:
@@ -418,6 +419,8 @@ class SSolver:
         new_velocity = limit_acceleration(
             current_state[3:6], new_velocity, self.max_acceleration, dt=dt
         )
+        if self.attenuation_mode and points_around.size == 0:
+            new_velocity *= 0.9
         return saturation(new_velocity, self.max_speed)
 
     def state_filter(
